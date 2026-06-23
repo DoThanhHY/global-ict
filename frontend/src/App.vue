@@ -1,32 +1,85 @@
 <script setup lang="ts">
-import { useWebSocket } from './composables/useWebSocket';
-import { useAuthStore } from './stores/auth.store';
-
+import { useWebSocket } from './composables/useWebSocket'
+import { useAuthStore } from './stores/auth.store'
+import AlertPanel from './components/AlertPanel.vue'
 
 const authStore = useAuthStore()
-useWebSocket()
+
+// Initialize WebSocket nếu đã authenticated
+if (authStore.isAuthenticated) {
+  useWebSocket()
+}
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
-    <aside v-if="authStore.isAuthenticated" class="w-56 bg-white border-r flex flex-col py-6 px-4 gap-1 shadow-sm">
-      <p class="text-xs text-gray-400 font-semibold uppercase mb-3 px-2">Global ICT</p>
-      <router-link to="/">🏠 Dashboard</router-link>
-      <router-link to="/devices">📡 Thiết bị</router-link>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Main Layout (nếu authenticated) -->
+    <div v-if="authStore.isAuthenticated" class="flex h-screen flex-col">
+      <!-- Header -->
+      <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between h-16">
+            <!-- Logo/Title -->
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🏠</span>
+              <h1 class="text-xl font-bold text-gray-900">Global ICT IoT</h1>
+            </div>
 
-      <div class="mt-auto">
-        <p class="text-xs text-gray-400 px-2 mb-1">{{ authStore.username }}</p>
-        <button
-          class="w-full text-left px-3 py-2 rounded-xl text-sm text-red-500 hover:bg-red-50 transition"
-          @click="authStore.logout()"
-        >
-          🚪 Đăng xuất
-        </button>
+            <!-- Header Actions -->
+            <div class="flex items-center gap-4">
+              <!-- Alert Panel -->
+              <AlertPanel />
+
+              <!-- User Menu -->
+              <div class="flex items-center gap-3 pl-4 border-l border-gray-200">
+                <span class="text-sm text-gray-600">{{ authStore.username }}</span>
+                <button
+                  @click="authStore.logout()"
+                  class="px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition"
+                  title="Đăng xuất"
+                >
+                  🚪
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-56 bg-white border-r border-gray-200 overflow-y-auto">
+          <nav class="p-4 space-y-1">
+            <router-link
+              to="/"
+              class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition"
+              active-class="bg-blue-50 text-blue-600 font-semibold"
+            >
+              <span>🏠</span>
+              <span>Dashboard</span>
+            </router-link>
+            <router-link
+              to="/devices"
+              class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition"
+              active-class="bg-blue-50 text-blue-600 font-semibold"
+            >
+              <span>📡</span>
+              <span>Thiết bị</span>
+            </router-link>
+          </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto">
+          <router-view />
+        </main>
       </div>
-    </aside>
+    </div>
 
-    <main class="flex-1 overflow-auto">
+    <!-- Login View (nếu chưa authenticated) -->
+    <div v-else>
       <router-view />
-    </main>
+    </div>
   </div>
 </template>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useDeviceStore } from '../stores/device.store'
+import DeviceCard from '../components/DeviceCard.vue'
+import DeviceForm from '../components/DeviceForm.vue'
 import type { Device } from '../utils'
 
 

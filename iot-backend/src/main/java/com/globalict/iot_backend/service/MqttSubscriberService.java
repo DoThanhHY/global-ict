@@ -1,5 +1,6 @@
 package com.globalict.iot_backend.service;
 
+import com.globalict.iot_backend.Dto.ThresholdAlertResponse;
 import com.globalict.iot_backend.entity.Device;
 import com.globalict.iot_backend.entity.SensorData;
 import com.globalict.iot_backend.repository.SensorDataRepository;
@@ -13,6 +14,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class MqttSubscriberService implements ApplicationRunner {
     private final DeviceService deviceService;
     private final SensorDataRepository sensorDataRepository;
     private final WebSocketService webSocketService;
+    private final ThresholdService thresholdService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -57,10 +60,26 @@ public class MqttSubscriberService implements ApplicationRunner {
                     data.setSwitchOn(json.get("on").asBoolean());
                 }
 
-                sensorDataRepository.save(data);
+                SensorData savedData = sensorDataRepository.save(data);
 
-                // Push real-time lên FE qua WebSocket
+                // Validate sensor data against thresholds
+                List<ThresholdAlertResponse> alerts = thresholdService.validateSensorData(savedData);
+
+                // Push real-time sensor data lên FE qua WebSocket
                 webSocketService.sendToAll("/topic/devices/" + deviceId, payload);
+
+                // Push threshold alerts lên FE qua WebSocket nếu có
+                if (!alerts.isEmpty()) {
+                    alerts.forEach(alert -> {
+                        try {
+                            String alertJson = objectMapper.writeValueAsString(alert);
+                            webSocketService.sendToAll("/topic/alerts/" + deviceId, alertJson);
+                            log.warn("Threshold alert sent via WebSocket: {}", alertJson);
+                        } catch (Exception e) {
+                            log.error("Error sending threshold alert", e);
+                        }
+                    });
+                }
 
             } catch (Exception e) {
                 log.error("Error processing MQTT message", e);

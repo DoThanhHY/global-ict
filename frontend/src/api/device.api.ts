@@ -1,7 +1,5 @@
-import axios from "axios";
 import type { Device } from "../utils";
-
-const http = axios.create({ baseURL: "http://localhost:8080/api" });
+import { http } from '../api/http'
 
 export const deviceApi = {
   getAll: () => http.get<Device[]>("/devices").then((r) => r.data),

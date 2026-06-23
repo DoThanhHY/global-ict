@@ -1,7 +1,6 @@
-import axios from 'axios'
+// import axios from 'axios'
 import type { SensorData } from '../utils'
-
-const http = axios.create({ baseURL: 'http://localhost:8080/api' })
+import { http } from '../api/http'
 
 export const sensorDataApi = {
   getByDevice: (deviceId: string, limit = 50) =>

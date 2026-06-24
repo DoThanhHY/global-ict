@@ -4,6 +4,8 @@ import com.globalict.iot_backend.Dto.CreateDeviceRequest;
 import com.globalict.iot_backend.Dto.UpdateDeviceRequest;
 import com.globalict.iot_backend.entity.Device;
 import com.globalict.iot_backend.repository.DeviceRepository;
+import com.globalict.iot_backend.exception.ConflictException;
+import com.globalict.iot_backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -30,7 +32,7 @@ public class DeviceService {
 
     public Device create(CreateDeviceRequest req) {
         if (deviceRepository.existsByDeviceId(req.getDeviceId())) {
-            throw new RuntimeException("DeviceId đã tồn tại: " + req.getDeviceId());
+            throw new ConflictException("DeviceId already exists: " + req.getDeviceId());
         }
 
         Device device = Device.builder()
@@ -47,7 +49,7 @@ public class DeviceService {
 
     public Device update(Long id, UpdateDeviceRequest req) {
         Device device = deviceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy device id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Device not found: " + id));
 
         if (req.getName() != null) device.setName(req.getName());
         if (req.getLocation() != null) device.setLocation(req.getLocation());

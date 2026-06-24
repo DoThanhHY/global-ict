@@ -4,6 +4,7 @@ import com.globalict.iot_backend.Dto.ThresholdAlertResponse;
 import com.globalict.iot_backend.entity.Device;
 import com.globalict.iot_backend.entity.SensorData;
 import com.globalict.iot_backend.repository.SensorDataRepository;
+import com.globalict.iot_backend.util.MqttPayloadValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -28,6 +29,7 @@ public class MqttSubscriberService implements ApplicationRunner {
     private final WebSocketService webSocketService;
     private final ThresholdService thresholdService;
     private final ObjectMapper objectMapper;
+    private final MqttPayloadValidator mqttPayloadValidator;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -38,7 +40,10 @@ public class MqttSubscriberService implements ApplicationRunner {
 
             try {
                 JsonNode json = objectMapper.readTree(payload);
-                String deviceId = json.get("deviceId").asText();
+
+                mqttPayloadValidator.validate(json);
+
+                String deviceId = json.get("deviceId").asString();
 
                 // Upsert device (online)
                 Device device = deviceService.markOnline(deviceId);

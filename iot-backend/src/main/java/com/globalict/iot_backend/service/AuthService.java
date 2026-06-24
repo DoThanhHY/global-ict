@@ -4,6 +4,7 @@ import com.globalict.iot_backend.Dto.AuthResponse;
 import com.globalict.iot_backend.Dto.LoginRequest;
 import com.globalict.iot_backend.entity.User;
 import com.globalict.iot_backend.repository.UserRepository;
+import com.globalict.iot_backend.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,7 +46,7 @@ public class AuthService {
 
     public void register(LoginRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username đã tồn tại");
+            throw new ConflictException("Username already exists: " + request.getUsername());
         }
 
         User user = User.builder()

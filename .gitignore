@@ -1,5 +1,6 @@
-# Mosquitto password file — generated locally, never commit
+# Mosquitto — generated locally, never commit
 docker/mosquitto/passwd
+docker/mosquitto/certs/
 
 # Spring Boot
 iot-backend/target/

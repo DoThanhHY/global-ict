@@ -4,10 +4,11 @@ import os
 import time
 import random
 
-BROKER = "localhost"
-PORT = 1883
+BROKER = os.getenv("MQTT_BROKER", "localhost")
+PORT = int(os.getenv("MQTT_PORT", "8883"))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME", "iot-simulator")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "mqtt-simulator-secret")
+CA_CERT = os.getenv("MQTT_CA_CERT", "../docker/mosquitto/certs/ca.crt")
 
 DEVICES = [
     {"id": "esp32-001", "name": "Phòng khách", "type": "TEMPERATURE_HUMIDITY"},
@@ -18,6 +19,7 @@ DEVICES = [
 
 client = mqtt.Client(client_id="python-simulator")
 client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+client.tls_set(ca_certs=CA_CERT)
 client.connect(BROKER, PORT)
 client.loop_start()
 

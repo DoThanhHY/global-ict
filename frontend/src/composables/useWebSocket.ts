@@ -2,17 +2,22 @@ import { onMounted, onUnmounted } from 'vue'
 import { Client } from '@stomp/stompjs'
 import { useDeviceStore } from '../stores/device.store'
 import { useThresholdAlertStore } from '../stores/threshold.store'
+import { useAuthStore } from '../stores/auth.store'
 import SockJS from 'sockjs-client'
 import type { ThresholdAlert } from '../api/threshold.api'
 
 export function useWebSocket() {
   const deviceStore = useDeviceStore()
   const alertStore = useThresholdAlertStore()
+  const authStore = useAuthStore()
   let stompClient: Client | null = null
 
   onMounted(() => {
     stompClient = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      connectHeaders: {
+        Authorization: `Bearer ${authStore.token}`,
+      },
       onConnect: () => {
         console.log('✅ WebSocket connected')
 

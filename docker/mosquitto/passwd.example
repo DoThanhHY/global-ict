@@ -1,0 +1,8 @@
+# Mosquitto password file — DO NOT commit the real passwd file.
+# Generate it with:
+#   mosquitto_passwd -c -b docker/mosquitto/passwd iot-backend <your-password>
+#   mosquitto_passwd -b    docker/mosquitto/passwd iot-simulator <your-password>
+#
+# Format (bcrypt hashes, not plaintext — safe to inspect but not to share):
+# iot-backend:$7$...
+# iot-simulator:$7$...

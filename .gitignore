@@ -1,0 +1,23 @@
+# Mosquitto password file — generated locally, never commit
+docker/mosquitto/passwd
+
+# Spring Boot
+iot-backend/target/
+iot-backend/src/main/resources/application.properties
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python
+iot-simulator/__pycache__/
+iot-simulator/*.pyc
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store

@@ -11,6 +11,8 @@ import com.globalict.iot_backend.entity.ThresholdAlert;
 import com.globalict.iot_backend.repository.DeviceRepository;
 import com.globalict.iot_backend.repository.ThresholdAlertRepository;
 import com.globalict.iot_backend.repository.ThresholdRepository;
+import com.globalict.iot_backend.exception.ConflictException;
+import com.globalict.iot_backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,14 +38,14 @@ public class ThresholdService {
         Device device = deviceRepository.findById(req.getDeviceId())
                 .orElseThrow(() -> {
                     log.error("Device not found: {}", req.getDeviceId());
-                    return new RuntimeException("Device not found");
+                    return new ResourceNotFoundException("Device not found: " + req.getDeviceId());
                 });
 
         // Check if threshold already exists for this field
         thresholdRepository.findByDeviceIdAndField(req.getDeviceId(), req.getField())
                 .ifPresent(t -> {
                     log.warn("Threshold already exists for device: {}, field: {}", req.getDeviceId(), req.getField());
-                    throw new RuntimeException("Threshold already exists for this field");
+                    throw new ConflictException("Threshold already exists for field: " + req.getField());
                 });
 
         Threshold threshold = Threshold.builder()
@@ -71,7 +73,7 @@ public class ThresholdService {
     public ThresholdResponse findById(Long id) {
         log.debug("Fetching threshold: {}", id);
         Threshold threshold = thresholdRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Threshold not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Threshold not found: " + id));
         return mapToResponse(threshold);
     }
 
@@ -80,7 +82,7 @@ public class ThresholdService {
         log.info("Updating threshold: {}", id);
 
         Threshold threshold = thresholdRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Threshold not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Threshold not found: " + id));
 
         if (req.getField() != null) {
             threshold.setField(req.getField());
@@ -103,7 +105,7 @@ public class ThresholdService {
         log.info("Deleting threshold: {}", id);
 
         Threshold threshold = thresholdRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Threshold not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Threshold not found: " + id));
 
         thresholdRepository.delete(threshold);
         log.info("Threshold deleted: id={}", id);

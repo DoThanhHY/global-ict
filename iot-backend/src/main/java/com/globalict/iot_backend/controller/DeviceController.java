@@ -1,6 +1,7 @@
 package com.globalict.iot_backend.controller;
 
 import com.globalict.iot_backend.Dto.CreateDeviceRequest;
+import com.globalict.iot_backend.Dto.DeviceCommandRequest;
 import com.globalict.iot_backend.Dto.UpdateDeviceRequest;
 import com.globalict.iot_backend.entity.Device;
 import com.globalict.iot_backend.service.DeviceService;
@@ -31,7 +32,7 @@ public class DeviceController {
     }
 
     @PutMapping("/{id}")
-    public Device update(@PathVariable Long id, @RequestBody UpdateDeviceRequest req) {
+    public Device update(@PathVariable Long id, @RequestBody @Valid UpdateDeviceRequest req) {
         return deviceService.update(id, req);
     }
 
@@ -40,12 +41,11 @@ public class DeviceController {
         deviceService.delete(id);
     }
 
-    // Gửi lệnh xuống thiết bị qua MQTT
     @PostMapping("/{deviceId}/command")
     public ResponseEntity<Void> sendCommand(
             @PathVariable String deviceId,
-            @RequestBody Map<String, Object> command) {
-        deviceService.sendCommand(deviceId, command);
+            @RequestBody @Valid DeviceCommandRequest req) {
+        deviceService.sendCommand(deviceId, Map.of("action", req.getAction()));
         return ResponseEntity.ok().build();
     }
 }

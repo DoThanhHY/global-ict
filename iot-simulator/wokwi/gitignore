@@ -1,7 +1,0 @@
-# Secrets — không commit
-secrets.h
-
-# Wokwi build output
-build/
-*.bin
-*.elf

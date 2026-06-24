@@ -17,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/thresholds")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ThresholdController {
 
     private final ThresholdService thresholdService;

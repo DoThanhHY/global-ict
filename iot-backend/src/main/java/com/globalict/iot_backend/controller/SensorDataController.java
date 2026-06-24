@@ -16,7 +16,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/sensor-data")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 @Validated
 public class SensorDataController {
 

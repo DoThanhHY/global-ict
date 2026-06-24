@@ -1,10 +1,13 @@
 import paho.mqtt.client as mqtt
 import json
+import os
 import time
 import random
 
 BROKER = "localhost"
 PORT = 1883
+MQTT_USERNAME = os.getenv("MQTT_USERNAME", "iot-simulator")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "mqtt-simulator-secret")
 
 DEVICES = [
     {"id": "esp32-001", "name": "Phòng khách", "type": "TEMPERATURE_HUMIDITY"},
@@ -14,6 +17,7 @@ DEVICES = [
 ]
 
 client = mqtt.Client(client_id="python-simulator")
+client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
 client.connect(BROKER, PORT)
 client.loop_start()
 

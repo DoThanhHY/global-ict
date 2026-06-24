@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
-
 public class MqttConfig {
     @Value("${mqtt.broker-url}")
     private String brokerUrl;
@@ -17,10 +16,18 @@ public class MqttConfig {
     @Value("${mqtt.client-id}")
     private String clientId;
 
+    @Value("${mqtt.username}")
+    private String username;
+
+    @Value("${mqtt.password}")
+    private String password;
+
     @Bean
     public MqttClient mqttClient() throws MqttException {
         MqttClient client = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
         MqttConnectOptions options = new MqttConnectOptions();
+        options.setUserName(username);
+        options.setPassword(password.toCharArray());
         options.setAutomaticReconnect(true);
         options.setCleanSession(true);
         client.connect(options);

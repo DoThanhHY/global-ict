@@ -39,3 +39,13 @@ export interface AuthResponse {
   username: string
   role: string
 }
+
+export interface CommandLog {
+  id: number
+  deviceId: string
+  action: string
+  sentBy: string
+  sentAt: string
+  status: string
+  errorMessage?: string
+}

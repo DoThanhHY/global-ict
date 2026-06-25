@@ -15,6 +15,7 @@ export const router = createRouter({
     { path: '/',           name: 'dashboard', component: DashboardView },
     { path: '/devices',    name: 'devices',   component: DevicesView },
     { path: '/devices/:deviceId', name: 'device-detail', component: DeviceDetailView },
+    { path: '/command-logs', name: 'command-logs', component: () => import('../views/CommandLogView.vue') },
   ]
 })
 

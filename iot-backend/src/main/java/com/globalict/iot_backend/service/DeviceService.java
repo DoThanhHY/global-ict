@@ -3,6 +3,8 @@ package com.globalict.iot_backend.service;
 import com.globalict.iot_backend.Dto.CreateDeviceRequest;
 import com.globalict.iot_backend.Dto.UpdateDeviceRequest;
 import com.globalict.iot_backend.entity.Device;
+import com.globalict.iot_backend.entity.CommandLog;
+import com.globalict.iot_backend.repository.CommandLogRepository;
 import com.globalict.iot_backend.repository.DeviceRepository;
 import com.globalict.iot_backend.exception.ConflictException;
 import com.globalict.iot_backend.exception.ResourceNotFoundException;
@@ -10,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
@@ -23,6 +27,7 @@ import java.util.Map;
 public class DeviceService {
 
     private final DeviceRepository deviceRepository;
+    private final CommandLogRepository commandLogRepository;
     private final MqttClient mqttClient;
     private final ObjectMapper objectMapper;
 
@@ -84,7 +89,11 @@ public class DeviceService {
     }
 
     // Gửi command xuống ESP32 qua MQTT
+    @Transactional
     public void sendCommand(String deviceId, Map<String, Object> command) {
+        String action = (String) command.get("action");
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
         try {
             String topic = "home/" + deviceId + "/command";
             String payload = objectMapper.writeValueAsString(command);
@@ -94,8 +103,26 @@ public class DeviceService {
             mqttClient.publish(topic, message);
 
             log.info("Command sent [{}]: {}", topic, payload);
+
+            commandLogRepository.save(CommandLog.builder()
+                    .deviceId(deviceId)
+                    .action(action)
+                    .sentBy(username)
+                    .sentAt(LocalDateTime.now())
+                    .status("SUCCESS")
+                    .build());
         } catch (Exception e) {
             log.error("Failed to send command to device {}", deviceId, e);
+
+            commandLogRepository.save(CommandLog.builder()
+                    .deviceId(deviceId)
+                    .action(action)
+                    .sentBy(username)
+                    .sentAt(LocalDateTime.now())
+                    .status("FAILED")
+                    .errorMessage(e.getMessage())
+                    .build());
+
             throw new RuntimeException("Không thể gửi lệnh tới thiết bị");
         }
     }

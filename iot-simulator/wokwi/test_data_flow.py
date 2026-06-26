@@ -58,12 +58,11 @@ def on_message(client, userdata, msg):
         print(f"[{now}] [STATUS] device={payload.get('deviceId')} online={payload.get('online')}")
 
 
-def send_test_command(client, action: str, value: str):
+def send_test_command(client, action: str):
     """Gửi thử 1 command xuống ESP32 để test LED — dùng cho task 'ESP32 + LED nhận command'."""
     payload = {
         "deviceId": DEVICE_ID,
         "action": action,
-        "value": value,
         "timestamp": int(time.time() * 1000),
     }
     client.publish(TOPIC_COMMAND, json.dumps(payload))
@@ -85,7 +84,7 @@ def main():
         while True:
             cmd = input().strip().lower()
             if cmd in ("on", "off"):
-                send_test_command(client, "led", cmd)
+                send_test_command(client, cmd)
             elif cmd == "q":
                 break
     except KeyboardInterrupt:

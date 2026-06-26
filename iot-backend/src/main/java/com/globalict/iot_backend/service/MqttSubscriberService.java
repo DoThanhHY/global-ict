@@ -3,6 +3,7 @@ package com.globalict.iot_backend.service;
 import com.globalict.iot_backend.Dto.ThresholdAlertResponse;
 import com.globalict.iot_backend.entity.Device;
 import com.globalict.iot_backend.entity.SensorData;
+import com.globalict.iot_backend.repository.DeviceRepository;
 import com.globalict.iot_backend.repository.SensorDataRepository;
 import com.globalict.iot_backend.util.MqttPayloadValidator;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class MqttSubscriberService implements ApplicationRunner {
 
     private final MqttClient mqttClient;
     private final DeviceService deviceService;
+    private final DeviceRepository deviceRepository;
     private final SensorDataRepository sensorDataRepository;
     private final WebSocketService webSocketService;
     private final ThresholdService thresholdService;
@@ -36,14 +38,20 @@ public class MqttSubscriberService implements ApplicationRunner {
         // Subscribe tất cả topic home/+/data
         mqttClient.subscribe("home/+/data", (topic, message) -> {
             String payload = new String(message.getPayload());
+
+            // Extract deviceId từ topic (home/{deviceId}/data) — filter trước khi parse JSON
+            String deviceId = topic.split("/")[1];
+            if (!deviceRepository.existsByDeviceId(deviceId)) {
+                log.debug("Ignoring MQTT message from unknown device: {}", deviceId);
+                return;
+            }
+
             log.info("MQTT received [{}]: {}", topic, payload);
 
             try {
                 JsonNode json = objectMapper.readTree(payload);
 
                 mqttPayloadValidator.validate(json);
-
-                String deviceId = json.get("deviceId").asString();
 
                 // Upsert device (online)
                 Device device = deviceService.markOnline(deviceId);

@@ -65,7 +65,6 @@ const statusLabel = computed(() =>
         Chi tiết
       </router-link>
       <button
-        v-if="device.type === 'SWITCH'"
         class="flex-1 text-sm bg-yellow-50 text-yellow-600 rounded-lg py-1.5 hover:bg-yellow-100 transition"
         @click="emit('toggle', device)"
       >

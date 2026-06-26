@@ -9,9 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse login(LoginRequest request) {
@@ -32,16 +30,46 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-        String token = jwtService.generateToken(request.getUsername());
         User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
+
+        String accessToken = jwtService.generateToken(user.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(user.getUsername());
 
         log.info("User logged in: {}", request.getUsername());
 
         return AuthResponse.builder()
-                .token(token)
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .username(user.getUsername())
                 .role(user.getRole())
                 .build();
+    }
+
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        if (!jwtService.isRefreshTokenValid(refreshToken)) {
+            throw new IllegalArgumentException("Invalid or expired refresh token");
+        }
+
+        String username = jwtService.extractUsername(refreshToken);
+        String newAccessToken = jwtService.generateToken(username);
+        String newRefreshToken = jwtService.generateRefreshToken(username);
+
+        log.info("Token refreshed for user: {}", username);
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
+    }
+
+    public void logout(String accessToken, String refreshToken) {
+        if (accessToken != null) {
+            tokenBlacklistService.blacklistToken(accessToken);
+        }
+        if (refreshToken != null) {
+            tokenBlacklistService.blacklistToken(refreshToken);
+        }
+        log.info("User logged out, tokens blacklisted");
     }
 
     public void register(LoginRequest request) {

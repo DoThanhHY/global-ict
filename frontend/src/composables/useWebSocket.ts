@@ -16,7 +16,7 @@ export function useWebSocket() {
     stompClient = new Client({
       webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
       connectHeaders: {
-        Authorization: `Bearer ${authStore.token}`,
+        Authorization: `Bearer ${authStore.accessToken}`,
       },
       onConnect: () => {
         console.log('✅ WebSocket connected')

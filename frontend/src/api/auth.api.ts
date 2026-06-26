@@ -1,5 +1,5 @@
 // import axios from 'axios'
-import type { AuthResponse, LoginRequest } from '../utils'
+import type { AuthResponse, LoginRequest, LogoutRequest } from '../utils'
 import { http } from '../api/http'
 
 export const authApi = {
@@ -9,6 +9,9 @@ export const authApi = {
   register: (data: LoginRequest) =>
     http.post('/auth/register', data),
 
-  logout: () =>
-    http.post('/auth/logout'),
+  logout: (data: LogoutRequest) =>
+    http.post('/auth/logout', data),
+
+  refresh: (refreshToken: string) =>
+    http.post<AuthResponse>('/auth/refresh', { refreshToken }).then(r => r.data),
 }

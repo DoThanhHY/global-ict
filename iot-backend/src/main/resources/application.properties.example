@@ -18,6 +18,11 @@ mqtt.ca-cert-path=${MQTT_CA_CERT_PATH:}
 # Server
 server.port=8080
 
+# Redis
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+
 #JWT
 jwt.secret=your-super-secret-key-must-be-at-least-256-bits-long
-jwt.expiration=86400000
+jwt.expiration=900000
+jwt.refresh-expiration=604800000

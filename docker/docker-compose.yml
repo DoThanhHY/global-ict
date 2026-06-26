@@ -11,7 +11,7 @@ services:
       - ./mosquitto/certs:/mosquitto/certs:ro
       - mosquitto-data:/mosquitto/data
     restart: unless-stopped
-  
+
   postgres:
     image: postgres:16
     container_name: iot-postgres
@@ -25,6 +25,16 @@ services:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  redis:
+    image: redis:7-alpine
+    container_name: iot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
 volumes:
   mosquitto-data:
   postgres-data:
+  redis-data:

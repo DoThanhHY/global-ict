@@ -56,7 +56,7 @@ public class RateLimitingConfig {
     }
 
     public static final PathTierResolver TIER_RESOLVER = (method, path) -> {
-        if (path.matches("/api/auth/(login|register)")) {
+        if (path.matches("/api/auth/(login|register|refresh)")) {
             return Tier.AUTH;
         }
         if (path.matches("/api/devices/\\d+/command") && "POST".equalsIgnoreCase(method)) {

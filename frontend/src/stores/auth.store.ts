@@ -5,27 +5,39 @@ import { authApi } from '../api/auth.api'
 import { router } from '../router'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem('token'))
+  const accessToken = ref<string | null>(localStorage.getItem('accessToken'))
+  const refreshToken = ref<string | null>(localStorage.getItem('refreshToken'))
   const username = ref<string | null>(localStorage.getItem('username'))
 
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => !!accessToken.value)
 
   async function login(data: LoginRequest) {
     const res = await authApi.login(data)
-    token.value = res.token
+    accessToken.value = res.accessToken
+    refreshToken.value = res.refreshToken
     username.value = res.username
-    localStorage.setItem('token', res.token)
+    localStorage.setItem('accessToken', res.accessToken)
+    localStorage.setItem('refreshToken', res.refreshToken)
     localStorage.setItem('username', res.username)
     router.push('/')
   }
 
-  function logout() {
-    token.value = null
+  async function logout() {
+    try {
+      if (refreshToken.value) {
+        await authApi.logout({ refreshToken: refreshToken.value })
+      }
+    } catch {
+      // ignore — vẫn logout local dù api fail
+    }
+    accessToken.value = null
+    refreshToken.value = null
     username.value = null
-    localStorage.removeItem('token')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('username')
     router.push('/login')
   }
 
-  return { token, username, isAuthenticated, login, logout }
+  return { accessToken, refreshToken, username, isAuthenticated, login, logout }
 })

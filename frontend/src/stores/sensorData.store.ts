@@ -8,10 +8,10 @@ export const useSensorDataStore = defineStore('sensorData', () => {
   const stats = ref<Record<string, number>>({})
   const loading = ref(false)
 
-  async function fetchByDevice(deviceId: string) {
+  async function fetchByDevice(deviceId: string, from?: string, to?: string) {
     loading.value = true
     try {
-      history.value = await sensorDataApi.getByDevice(deviceId)
+      history.value = await sensorDataApi.getByDevice(deviceId, 1000, from, to)
     } finally {
       loading.value = false
     }

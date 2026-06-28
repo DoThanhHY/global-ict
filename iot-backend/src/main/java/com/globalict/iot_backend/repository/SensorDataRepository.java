@@ -15,6 +15,12 @@ public interface SensorDataRepository extends JpaRepository<SensorData, Long> {
     @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId ORDER BY s.recordedAt DESC")
     List<SensorData> findLatestByDeviceId(@Param("deviceId") String deviceId, Pageable pageable);
 
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt BETWEEN :from AND :to ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtBetween(
+            @Param("deviceId") String deviceId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
+
     @Query("""
         SELECT new map(
             COUNT(DISTINCT s.device.id) as totalDevices,

@@ -24,7 +24,18 @@ public class SensorDataController {
     @GetMapping("/device/{deviceId}")
     public List<SensorDataResponse> getByDevice(
             @PathVariable String deviceId,
-            @RequestParam(defaultValue = "50") @Min(1) @Max(1000) int limit) {
+            @RequestParam(defaultValue = "50") @Min(1) @Max(1000) int limit,
+            @RequestParam(required = false) LocalDateTime from,
+            @RequestParam(required = false) LocalDateTime to) {
+
+        if (from != null && to != null) {
+            return sensorDataRepository
+                    .findByDeviceIdAndRecordedAtBetween(deviceId, from, to)
+                    .stream()
+                    .map(SensorDataResponse::from)
+                    .toList();
+        }
+
         return sensorDataRepository
                 .findLatestByDeviceId(deviceId, PageRequest.of(0, limit))
                 .stream()

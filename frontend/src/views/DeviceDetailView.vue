@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSensorDataStore } from '../stores/sensorData.store'
 import { useDeviceStore } from '../stores/device.store'
-import SensorChart from '../components/SensorChart.vue'
+import LineChart from '../components/LineChart.vue'
 import ThresholdSettings from '../components/ThresholdSettings.vue'
 
 const route = useRoute()
@@ -16,9 +16,38 @@ const device = computed(() =>
   deviceStore.devices.find(d => d.deviceId === deviceId)
 )
 
+const timeRanges = [
+  { label: '1h', value: 1 },
+  { label: '6h', value: 6 },
+  { label: '24h', value: 24 },
+  { label: '7d', value: 168 },
+  { label: 'Tùy chỉnh', value: 0 },
+]
+
+const activeRange = ref(24)
+const customFrom = ref('')
+const customTo = ref('')
+
+function toISO(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+async function fetchWithRange(range: number) {
+  activeRange.value = range
+  if (range === 0) {
+    if (!customFrom.value || !customTo.value) return
+    await sensorStore.fetchByDevice(deviceId, customFrom.value, customTo.value)
+  } else {
+    const to = new Date()
+    const from = new Date(to.getTime() - range * 60 * 60 * 1000)
+    await sensorStore.fetchByDevice(deviceId, toISO(from), toISO(to))
+  }
+}
+
 onMounted(async () => {
   if (!deviceStore.devices.length) await deviceStore.fetchAll()
-  await sensorStore.fetchByDevice(deviceId)
+  await fetchWithRange(24)
 })
 </script>
 
@@ -65,9 +94,46 @@ onMounted(async () => {
 
       <!-- Charts (chỉ hiện với TEMPERATURE_HUMIDITY) -->
       <template v-if="device.type === 'TEMPERATURE_HUMIDITY' && sensorStore.history.length">
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <SensorChart :data="sensorStore.history" field="temperature" />
-          <SensorChart :data="sensorStore.history" field="humidity" />
+        <!-- Time Range Tabs -->
+        <div class="mt-6 flex items-center gap-2 flex-wrap">
+          <button
+            v-for="r in timeRanges"
+            :key="r.value"
+            @click="fetchWithRange(r.value)"
+            class="px-3 py-1.5 text-sm font-medium rounded-lg transition"
+            :class="activeRange === r.value
+              ? 'bg-blue-600 text-white shadow'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+          >
+            {{ r.label }}
+          </button>
+        </div>
+
+        <!-- Custom date inputs -->
+        <div v-if="activeRange === 0" class="mt-3 flex items-center gap-3">
+          <input
+            v-model="customFrom"
+            type="datetime-local"
+            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
+          />
+          <span class="text-gray-500">→</span>
+          <input
+            v-model="customTo"
+            type="datetime-local"
+            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
+          />
+          <button
+            @click="fetchWithRange(0)"
+            class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
+          >
+            Tra cứu
+          </button>
+        </div>
+
+        <!-- Line Charts -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <LineChart :data="sensorStore.history" field="temperature" title="🌡️ Nhiệt độ (°C)" />
+          <LineChart :data="sensorStore.history" field="humidity" title="💧 Độ ẩm (%)" />
         </div>
       </template>
 

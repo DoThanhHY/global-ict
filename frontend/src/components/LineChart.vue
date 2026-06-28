@@ -11,7 +11,7 @@ use([CanvasRenderer, EChartsLine, GridComponent, TooltipComponent, DataZoomCompo
 
 const props = defineProps<{
   data: SensorData[]
-  field: 'temperature' | 'humidity'
+  field: 'temperature' | 'humidity' 
   title: string
 }>()
 

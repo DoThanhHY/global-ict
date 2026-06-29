@@ -3,7 +3,8 @@ import { onMounted, computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSensorDataStore } from '../stores/sensorData.store'
 import { useDeviceStore } from '../stores/device.store'
-import LineChart from '../components/LineChart.vue'
+import SensorChart from '../components/SensorChart.vue'
+import UptimeDonutChart from '../components/UptimeDonutChart.vue'
 import ThresholdSettings from '../components/ThresholdSettings.vue'
 
 const route = useRoute()
@@ -11,43 +12,57 @@ const deviceId = route.params.deviceId as string
 
 const deviceStore = useDeviceStore()
 const sensorStore = useSensorDataStore()
+const selectedRange = ref<'1h' | '24h' | '7d'>('24h')
+const rangeOptions = [
+  { label: '1h', value: '1h' },
+  { label: '24h', value: '24h' },
+  { label: '7d', value: '7d' },
+] as const
 
 const device = computed(() =>
   deviceStore.devices.find(d => d.deviceId === deviceId)
 )
 
-const timeRanges = [
-  { label: '1h', value: 1 },
-  { label: '6h', value: 6 },
-  { label: '24h', value: 24 },
-  { label: '7d', value: 168 },
-  { label: 'Tùy chỉnh', value: 0 },
-]
+const isTempHumidityDevice = computed(() => device.value?.type === 'TEMPERATURE_HUMIDITY')
+const isDoorSensorDevice = computed(() => device.value?.type === 'DOOR_SENSOR')
+const isSwitchDevice = computed(() => device.value?.type === 'SWITCH')
+const stateFilter = ref<'all' | 'on' | 'off'>('all')
 
-const activeRange = ref(24)
-const customFrom = ref('')
-const customTo = ref('')
+const filteredHistory = computed(() => {
+  if (stateFilter.value === 'all') {
+    return sensorStore.history
+  }
 
-function toISO(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  if (isDoorSensorDevice.value) {
+    return sensorStore.history.filter((row) =>
+      stateFilter.value === 'on' ? row.doorOpen === true : row.doorOpen === false
+    )
+  }
+
+  if (isSwitchDevice.value) {
+    return sensorStore.history.filter((row) =>
+      stateFilter.value === 'on' ? row.switchOn === true : row.switchOn === false
+    )
+  }
+
+  return sensorStore.history
+})
+
+const tableHistory = computed(() => filteredHistory.value.slice(0, 100))
+
+function changeRange(range: '1h' | '24h' | '7d') {
+  selectedRange.value = range
+  stateFilter.value = 'all'
+  sensorStore.fetchByDevice(deviceId, range)
 }
 
-async function fetchWithRange(range: number) {
-  activeRange.value = range
-  if (range === 0) {
-    if (!customFrom.value || !customTo.value) return
-    await sensorStore.fetchByDevice(deviceId, customFrom.value, customTo.value)
-  } else {
-    const to = new Date()
-    const from = new Date(to.getTime() - range * 60 * 60 * 1000)
-    await sensorStore.fetchByDevice(deviceId, toISO(from), toISO(to))
-  }
+function handleStateFilter(value: 'on' | 'off') {
+  stateFilter.value = stateFilter.value === value ? 'all' : value
 }
 
 onMounted(async () => {
   if (!deviceStore.devices.length) await deviceStore.fetchAll()
-  await fetchWithRange(24)
+  await sensorStore.fetchByDevice(deviceId, selectedRange.value)
 })
 </script>
 
@@ -92,50 +107,45 @@ onMounted(async () => {
       <!-- Threshold Settings -->
       <ThresholdSettings :device="device" />
 
-      <!-- Charts (chỉ hiện với TEMPERATURE_HUMIDITY) -->
-      <template v-if="device.type === 'TEMPERATURE_HUMIDITY' && sensorStore.history.length">
-        <!-- Time Range Tabs -->
-        <div class="mt-6 flex items-center gap-2 flex-wrap">
-          <button
-            v-for="r in timeRanges"
-            :key="r.value"
-            @click="fetchWithRange(r.value)"
-            class="px-3 py-1.5 text-sm font-medium rounded-lg transition"
-            :class="activeRange === r.value
-              ? 'bg-blue-600 text-white shadow'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-          >
-            {{ r.label }}
-          </button>
-        </div>
+      <div class="flex gap-2 mb-6">
+        <button
+          v-for="option in rangeOptions"
+          :key="option.value"
+          class="px-3 py-1.5 text-sm font-medium border transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 cursor-pointer"
+          :class="selectedRange === option.value
+            ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-[1.02]'
+            : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 hover:shadow-md active:scale-[0.98] active:bg-blue-100'"
+          @click="changeRange(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
 
-        <!-- Custom date inputs -->
-        <div v-if="activeRange === 0" class="mt-3 flex items-center gap-3">
-          <input
-            v-model="customFrom"
-            type="datetime-local"
-            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
-          />
-          <span class="text-gray-500">→</span>
-          <input
-            v-model="customTo"
-            type="datetime-local"
-            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg"
-          />
-          <button
-            @click="fetchWithRange(0)"
-            class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition"
-          >
-            Tra cứu
-          </button>
+      <div v-if="isTempHumidityDevice" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <div class="mb-2 text-sm font-semibold text-gray-700">🌡️ Nhiệt độ</div>
+          <SensorChart :data="sensorStore.history" field="temperature" :range="selectedRange" />
         </div>
+        <div>
+          <div class="mb-2 text-sm font-semibold text-gray-700">💧 Độ ẩm</div>
+          <SensorChart :data="sensorStore.history" field="humidity" :range="selectedRange" />
+        </div>
+      </div>
 
-        <!-- Line Charts -->
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <LineChart :data="sensorStore.history" field="temperature" title="🌡️ Nhiệt độ (°C)" />
-          <LineChart :data="sensorStore.history" field="humidity" title="💧 Độ ẩm (%)" />
-        </div>
-      </template>
+      <div v-if="isDoorSensorDevice" class="mt-6">
+        <div class="mb-2 text-sm font-semibold text-gray-700">🚪 Open / Closed</div>
+        <UptimeDonutChart :data="sensorStore.history" field="doorOpen" @filter-change="handleStateFilter" />
+      </div>
+
+      <div v-if="isSwitchDevice" class="mt-6">
+        <div class="mb-2 text-sm font-semibold text-gray-700">🟢 Uptime / Downtime</div>
+        <UptimeDonutChart :data="sensorStore.history" field="switchOn" @filter-change="handleStateFilter" />
+      </div>
+
+      <div v-if="(isDoorSensorDevice || isSwitchDevice) && stateFilter !== 'all'" class="mt-3 text-sm text-blue-700">
+        Đang lọc theo trạng thái: <b>{{ stateFilter === 'on' ? 'ON / Open' : 'OFF / Closed' }}</b>
+        <button class="ml-3 text-blue-600 hover:underline" @click="stateFilter = 'all'">Xóa lọc</button>
+      </div>
 
       <!-- Sensor Data History Table -->
       <div class="mt-6 bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
@@ -152,7 +162,7 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
-              <tr v-for="row in sensorStore.history" :key="row.id" class="hover:bg-gray-50 transition">
+              <tr v-for="row in tableHistory" :key="row.id" class="hover:bg-gray-50 transition">
                 <td class="px-6 py-3 text-gray-600 text-xs font-mono">
                   {{ new Date(row.recordedAt).toLocaleString('vi-VN') }}
                 </td>
@@ -172,7 +182,7 @@ onMounted(async () => {
           </table>
         </div>
 
-        <div v-if="!sensorStore.history.length" class="px-6 py-8 text-center text-gray-500">
+        <div v-if="!tableHistory.length" class="px-6 py-8 text-center text-gray-500">
           <p>Chưa có dữ liệu cảm biến</p>
         </div>
       </div>

@@ -5,11 +5,14 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   define: {
-    global: "globalThis"
+    global: 'globalThis',
   },
   resolve: {
     alias: {
       '@': '/src',
     },
-  }
+  },
+  optimizeDeps: {
+    include: ['echarts', 'echarts/core', 'echarts/charts', 'echarts/components', 'echarts/renderers'],
+  },
 })

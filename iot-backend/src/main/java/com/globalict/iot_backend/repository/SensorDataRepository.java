@@ -15,11 +15,40 @@ public interface SensorDataRepository extends JpaRepository<SensorData, Long> {
     @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId ORDER BY s.recordedAt DESC")
     List<SensorData> findLatestByDeviceId(@Param("deviceId") String deviceId, Pageable pageable);
 
-    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt BETWEEN :from AND :to ORDER BY s.recordedAt DESC")
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt >= :from AND s.recordedAt <= :to ORDER BY s.recordedAt DESC")
     List<SensorData> findByDeviceIdAndRecordedAtBetween(
-            @Param("deviceId") String deviceId,
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to);
+        @Param("deviceId") String deviceId,
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to,
+        Pageable pageable);
+
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt >= :from AND s.recordedAt <= :to ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtBetween(
+        @Param("deviceId") String deviceId,
+        @Param("from") LocalDateTime from,
+        @Param("to") LocalDateTime to);
+
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt >= :from ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtAfter(
+        @Param("deviceId") String deviceId,
+        @Param("from") LocalDateTime from,
+        Pageable pageable);
+
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt >= :from ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtAfter(
+        @Param("deviceId") String deviceId,
+        @Param("from") LocalDateTime from);
+
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt <= :to ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtBefore(
+        @Param("deviceId") String deviceId,
+        @Param("to") LocalDateTime to,
+        Pageable pageable);
+
+    @Query("SELECT s FROM SensorData s WHERE s.device.deviceId = :deviceId AND s.recordedAt <= :to ORDER BY s.recordedAt DESC")
+    List<SensorData> findByDeviceIdAndRecordedAtBefore(
+        @Param("deviceId") String deviceId,
+        @Param("to") LocalDateTime to);
 
     @Query("""
         SELECT new map(

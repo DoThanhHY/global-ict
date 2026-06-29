@@ -24,8 +24,7 @@ async function handleDelete(id: number) {
 
 async function handleToggle(device: Device) {
   const currentOn = device.latestData?.on ?? false
-  const action = currentOn ? 'off' : 'on'
-  await deviceStore.sendCommand(device.deviceId, { action })
+  await deviceStore.sendCommand(device.deviceId, { action: currentOn ? 'off' : 'on' })
 }
 </script>
 

@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/DashboardView.vue'
 import DevicesView from '../views/DevicesView.vue'
-import DeviceDetailView from '../views/DeviceDetailView.vue'
 import { useAuthStore } from '../stores/auth.store.ts'
 export const router = createRouter({
   history: createWebHistory(),
@@ -12,10 +11,10 @@ export const router = createRouter({
       component: () => import('../views/LoginView.vue'),
       meta: { requiresAuth: false }
     },
-    { path: '/',           name: 'dashboard', component: DashboardView },
-    { path: '/devices',    name: 'devices',   component: DevicesView },
-    { path: '/devices/:deviceId', name: 'device-detail', component: DeviceDetailView },
-    { path: '/command-logs', name: 'command-logs', component: () => import('../views/CommandLogView.vue') },
+    { path: '/',           name: 'dashboard', component: DashboardView, meta: { requiresAuth: true } },
+    { path: '/devices',    name: 'devices',   component: DevicesView, meta: { requiresAuth: true } },
+    { path: '/devices/:deviceId', name: 'device-detail', component: () => import('../views/DeviceDetailView.vue'), meta: { requiresAuth: true } },
+    { path: '/command-logs', name: 'command-logs', component: () => import('../views/CommandLogView.vue'), meta: { requiresAuth: true } },
   ]
 })
 

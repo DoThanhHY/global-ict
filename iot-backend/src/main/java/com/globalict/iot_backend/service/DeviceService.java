@@ -19,6 +19,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -67,11 +68,16 @@ public class DeviceService {
     }
 
     // Gọi khi nhận MQTT message — upsert device và đánh dấu online
-    public Device markOnline(String deviceId) {
+    public Device markOnline(String deviceId, String deviceTypeRaw) {
+        Device.DeviceType deviceType = parseDeviceType(deviceTypeRaw);
+
         return deviceRepository.findByDeviceId(deviceId)
                 .map(device -> {
                     device.setOnline(true);
                     device.setLastSeen(LocalDateTime.now());
+                    if (deviceType != null) {
+                        device.setType(deviceType);
+                    }
                     return deviceRepository.save(device);
                 })
                 .orElseGet(() -> {
@@ -80,12 +86,26 @@ public class DeviceService {
                     Device newDevice = Device.builder()
                             .deviceId(deviceId)
                             .name("Device " + deviceId)
+                            .type(deviceType)
                             .online(true)
                             .lastSeen(LocalDateTime.now())
                             .createdAt(LocalDateTime.now())
                             .build();
                     return deviceRepository.save(newDevice);
                 });
+    }
+
+    private Device.DeviceType parseDeviceType(String rawType) {
+        if (rawType == null || rawType.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Device.DeviceType.valueOf(rawType.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            log.warn("Ignoring invalid device type from payload: {}", rawType);
+            return null;
+        }
     }
 
     // Gửi command xuống ESP32 qua MQTT

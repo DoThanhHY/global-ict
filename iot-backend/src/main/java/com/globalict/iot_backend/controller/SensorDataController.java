@@ -6,10 +6,13 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -24,23 +27,45 @@ public class SensorDataController {
     @GetMapping("/device/{deviceId}")
     public List<SensorDataResponse> getByDevice(
             @PathVariable String deviceId,
-            @RequestParam(defaultValue = "50") @Min(1) @Max(1000) int limit,
-            @RequestParam(required = false) LocalDateTime from,
-            @RequestParam(required = false) LocalDateTime to) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(defaultValue = "100") @Min(1) @Max(1000) int limit) {
+        LocalDateTime fromLocal = from == null
+            ? null
+            : from.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime toLocal = to == null
+            ? null
+            : to.atZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 
-        if (from != null && to != null) {
+        if (fromLocal == null && toLocal == null) {
             return sensorDataRepository
-                    .findByDeviceIdAndRecordedAtBetween(deviceId, from, to)
-                    .stream()
-                    .map(SensorDataResponse::from)
-                    .toList();
-        }
-
-        return sensorDataRepository
                 .findLatestByDeviceId(deviceId, PageRequest.of(0, limit))
                 .stream()
                 .map(SensorDataResponse::from)
                 .toList();
+        }
+
+        if (fromLocal != null && toLocal != null) {
+            return sensorDataRepository
+                .findByDeviceIdAndRecordedAtBetween(deviceId, fromLocal, toLocal)
+                .stream()
+                .map(SensorDataResponse::from)
+                .toList();
+        }
+
+        if (fromLocal != null) {
+            return sensorDataRepository
+                .findByDeviceIdAndRecordedAtAfter(deviceId, fromLocal)
+                .stream()
+                .map(SensorDataResponse::from)
+                .toList();
+        }
+
+        return sensorDataRepository
+            .findByDeviceIdAndRecordedAtBefore(deviceId, toLocal)
+            .stream()
+            .map(SensorDataResponse::from)
+            .toList();
     }
 
     @GetMapping("/stats")
